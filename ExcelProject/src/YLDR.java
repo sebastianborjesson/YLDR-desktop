@@ -21,14 +21,17 @@ public class YLDR {
     YLDRStore yldrStore = new YLDRStore();
 
     Workbook workbook;
+    XSSFSheet spreadsheet;
 
     public void createRows(String startDatum, String slutDatum, Order[] ordrar) {
         XSSFSheet spreadsheet = (XSSFSheet) workbook.createSheet("Summary");
         createSheets(startDatum, slutDatum);
         createHeaderRow(spreadsheet);
-
+        String ordernumber = null;
         int rowCount = 1;
-        String ordernumber=ordrar[0].getOrderNumber();
+        if (0 < ordrar.length) {
+            ordernumber = ordrar[0].getOrderNumber();
+        }
         for (Order o : ordrar) {
 
             int columncount = 0;
@@ -45,7 +48,7 @@ public class YLDR {
             cell = row2.createCell(columncount++);
             cell.setCellValue(o.getSize());
 
-            ordernumber=o.getOrderNumber();
+            ordernumber = o.getOrderNumber();
             spreadsheet.autoSizeColumn(cell.getColumnIndex());
         }
     }
@@ -96,7 +99,7 @@ public class YLDR {
         File file = new File(path);
 
         if (!file.exists()) {
-            workbook=new XSSFWorkbook();
+            workbook = new XSSFWorkbook();
             createRows(startDatum, slutDatum, ordrar);
             try (OutputStream fileOut = new FileOutputStream(new File(String.valueOf(file)))) {
                 workbook.write(fileOut);
@@ -104,7 +107,7 @@ public class YLDR {
             }
         } else if (file.exists()) {
 
-            workbook=new XSSFWorkbook();
+            workbook = new XSSFWorkbook();
             for (int i = 1; file.exists(); i++) {
                 file = new File(String.format(System.getProperty("user.home") + "\\Fuch " + LocalDate.now(ZoneId.of("Europe/Stockholm")) + " (%d)" + ".xlsx", i));
             }
@@ -139,50 +142,136 @@ public class YLDR {
     }
 
     public void createSheets(String startDatum, String slutDatum) {
+
+        int rowCountCustomSheet=1;
+
         String[] SKU = new String[yldrStore.getDistinctSKU(startDatum, slutDatum).length];
         System.arraycopy(yldrStore.getDistinctSKU(startDatum, slutDatum), 0, SKU, 0, SKU.length);
 
-        String articlenumber=SKU[0];
 
+        String simpleSKU = "s";
+        String customizedSKU = "s";
+        String otherSKU = "s";
+        for (String s : yldrStore.getDistinctSKU(startDatum, slutDatum)) {
+            int rowCountSimpleSheet = 1;
+            int count = 0;
 
-        for (String s : yldrStore.getDistinctSKU(startDatum,slutDatum)) {
-            XSSFSheet spreadsheet = (XSSFSheet) workbook.createSheet(s);
-            createHeaderRow(spreadsheet);
-            int rowCount = 1;
-            if (!s.equals(articlenumber)){
-                XSSFRow separationRow = spreadsheet.createRow(rowCount++);
+            System.out.println("SKU:n är: " + s);
+            for (int i = s.length() - 1; i > 0; i--) {
+                if (s.charAt(i) == '-') {
+                    count++;
+                }
             }
+            String[] parts = s.split("-");
+
+
+            if (count == 2) {
+                if (!simpleSKU.equals(parts[0])) {
+                    spreadsheet = (XSSFSheet) workbook.createSheet(parts[0]);
+                    createHeaderRow(spreadsheet);
+                    simpleSKU = spreadsheet.getSheetName();
+                    String articlenumber="s";
+
+                    for (Order o : yldrStore.getOrdrarFromDatabase(startDatum, slutDatum)) {
+                        int columncountSimpleSheet = 0;
+
+                        //XSSFCell headerCell=createHeaderRow(spreadsheet).createCell(columncountSimpleSheet++);
+
+                        if (o.getArticleNumber().contains(parts[0]) && !o.getArticleNumber().contains("-c")) {
+                            if (!o.getArticleNumber().equals(articlenumber) && !articlenumber.endsWith("c")){
+                                XSSFRow separationRow = spreadsheet.createRow(rowCountSimpleSheet++);
+                            }
+                            XSSFRow row2 = spreadsheet.createRow(rowCountSimpleSheet++);
+
+                            XSSFCell cell = row2.createCell(columncountSimpleSheet++);
+                            cell.setCellValue(o.getOrderNumber());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            cell = row2.createCell(columncountSimpleSheet++);
+                            cell.setCellValue(o.getArticleNumber());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            cell = row2.createCell(columncountSimpleSheet++);
+                            cell.setCellValue(o.getSize());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            articlenumber=o.getArticleNumber();
+
+
+
+                        }
+                    }spreadsheet.shiftRows(2, spreadsheet.getLastRowNum()+1,-1);
+
+                }
+            } else if (count == 3) {
+
+                if (!customizedSKU.equals(parts[0] + "-" + parts[3])) {
+                    spreadsheet = (XSSFSheet) workbook.createSheet(parts[0] + "-" + parts[3]);
+                    createHeaderRow(spreadsheet);
+                    customizedSKU = spreadsheet.getSheetName();
+                    String articlenumber="s";
+                    for (Order o : yldrStore.getOrdrarFromDatabase(startDatum, slutDatum)) {
+
+                        int collumnCountCustomSheet = 0;
+
+                        if (o.getArticleNumber().contains(parts[0]) && o.getArticleNumber().contains("-c")) {
+                            if (!o.getArticleNumber().equals(articlenumber)){
+                                XSSFRow separationRow = spreadsheet.createRow(rowCountCustomSheet++);
+                            }
+                            XSSFRow row2 = spreadsheet.createRow(rowCountCustomSheet++);
+
+                            XSSFCell cell = row2.createCell(collumnCountCustomSheet++);
+                            cell.setCellValue(o.getOrderNumber());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            cell = row2.createCell(collumnCountCustomSheet++);
+                            cell.setCellValue(o.getArticleNumber());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            cell = row2.createCell(collumnCountCustomSheet++);
+                            cell.setCellValue(o.getSize());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+                            articlenumber=o.getArticleNumber();
+                        }
+                    }spreadsheet.shiftRows(2, spreadsheet.getLastRowNum()+1,-1);
+                }
+            } else if (count < 1) {
+
+               /* if (!otherSKU.equals(s)) {
+                    spreadsheet = (XSSFSheet) workbook.createSheet(s);
+                    createHeaderRow(spreadsheet);
+                    otherSKU = spreadsheet.getSheetName();
+                    int rowCountOtherSheet=1;
+                    for (Order o : yldrStore.getOrdrarFromDatabase(startDatum, slutDatum)) {
+                        int columncountOtherSheet = 0;
+
+                        if (o.getArticleNumber().equals(s)) {
+                            XSSFRow row2 = spreadsheet.createRow(rowCountOtherSheet++);
+
+                            XSSFCell cell = row2.createCell(columncountOtherSheet++);
+                            cell.setCellValue(o.getOrderNumber());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            cell = row2.createCell(columncountOtherSheet++);
+                            cell.setCellValue(o.getArticleNumber());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                            cell = row2.createCell(columncountOtherSheet++);
+                            cell.setCellValue(o.getSize());
+                            spreadsheet.autoSizeColumn(cell.getColumnIndex());
+                        }
+
+                    }
+                }*/
+            }
+
+
 
 
           /*  Timestamp startDatum=Timestamp.valueOf("2020-10-06 11:45:37");
-            Timestamp slutDatum=Timestamp.valueOf("2020-10-07 06:10:16");*/
-            for (Order o : yldrStore.getOrdrarFromDatabase(startDatum, slutDatum)) {
-
-                int columncount = 0;
-                //XSSFCell headerCell=createHeaderRow(spreadsheet).createCell(columncount++);
-
-                if (o.getArticleNumber().equals(s)) {
-                    XSSFRow row2 = spreadsheet.createRow(rowCount++);
-
-                    XSSFCell cell = row2.createCell(columncount++);
-                    cell.setCellValue(o.getOrderNumber());
-                    spreadsheet.autoSizeColumn(cell.getColumnIndex());
-
-                    cell = row2.createCell(columncount++);
-                    cell.setCellValue(o.getArticleNumber());
-                    spreadsheet.autoSizeColumn(cell.getColumnIndex());
-
-                    cell = row2.createCell(columncount++);
-                    cell.setCellValue(o.getSize());
-                    spreadsheet.autoSizeColumn(cell.getColumnIndex());
-
-                    articlenumber=s;
-                }
-            }
-
+          /*   Timestamp slutDatum=Timestamp.valueOf("2020-10-07 06:10:16");*/
 
         }
-
 
     }
 
@@ -191,3 +280,4 @@ public class YLDR {
     }
 
 }
+

@@ -36,9 +36,10 @@ public class Main{
         YLDR yldr=new YLDR();
 
         //yldr.laggTillProdukt("Pontus SKU","PontusProduktnenen");
-        /*Timestamp startDatum=Timestamp.valueOf("2020-10-06 11:45:37");
-        Timestamp slutDatum=Timestamp.valueOf("2020-10-07 06:10:16");*/
-
+        Timestamp startDatum=Timestamp.valueOf("2020-10-06 11:45:37");
+        Timestamp slutDatum=Timestamp.valueOf("2020-10-06 13:31:10");
+        //yldr.createSheets("2020-10-06 11:45:37","2020-10-06 13:31:10");
+      yldr.createWB("2020-10-06 11:45:37","2020-10-30 13:31:10");
 
         //yldr.createWB("2020-10-06 15:37:14","2020-10-07 08:14:20");
 
