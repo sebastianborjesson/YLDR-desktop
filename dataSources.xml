@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="MySQL - @remotemysql.com" uuid="054e371f-fa63-414b-838d-6bfbabffec79">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://remotemysql.com:3306</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="yldrdb@yldrdb.yldr.gg" uuid="e4a1cde3-de2c-4519-ad6c-9186dee9fc1a">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://yldrdb.yldr.gg:3306/yldrdb?serverTimezone=CET</jdbc-url>
+    </data-source>
+  </component>
+</project>
