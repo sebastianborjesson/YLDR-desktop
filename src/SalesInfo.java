@@ -101,7 +101,25 @@ public class SalesInfo {
             amountOfSKUSold[i] = count;
             count = 0;
         }*/
-        return amountOfSKUSold;
+
+        ArrayList <Integer> temp=new ArrayList<>();
+
+        for (int i:amountOfSKUSold) {
+            if (i!=0){
+                temp.add(i);
+            }
+        }
+
+        int [] daRealArray=new int[temp.size()];
+
+        int k=0;
+        for (int i:amountOfSKUSold) {
+            if (i!=0){
+                daRealArray[k]=i;
+                k++;
+            }
+        }
+        return daRealArray;
     }
 
 

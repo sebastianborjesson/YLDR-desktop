@@ -1,7 +1,8 @@
 public class Product {
-    String SKU;
-    String name;
-    String manufacturer;
+    private String SKU;
+    private String name;
+    private String manufacturer;
+    private float price;
 
     public Product() {
     }
@@ -10,6 +11,11 @@ public class Product {
         this.SKU = SKU;
         this.name = name;
         this.manufacturer = manufacturer;
+    }
+
+    public Product(String name, float price) {
+        this.name = name;
+        this.price = price;
     }
 
     public String getSKU() {
@@ -34,5 +40,13 @@ public class Product {
 
     public void setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
+    }
+
+    public float getPrice() {
+        return price;
+    }
+
+    public void setPrice(float price) {
+        this.price = price;
     }
 }

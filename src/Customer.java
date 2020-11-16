@@ -13,6 +13,7 @@ public class Customer {
     }
 
 
+
     public Customer(String email, String firstName, String lastName, String adress, String city, String zipCode, String state,  String country, String phoneNumber) {
         this.email = email;
         this.firstName = firstName;
@@ -81,5 +82,21 @@ public class Customer {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 }
