@@ -18,8 +18,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
+import javafx.util.converter.BooleanStringConverter;
 import javafx.util.converter.FloatStringConverter;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -84,6 +86,9 @@ public class FXmain extends Application {
         showSelectedOrder.setVisible(false);
         showSelectedOrder.managedProperty().bind(showSelectedOrder.visibleProperty());
 
+        Button expToLogistics= new Button("Exportera till logistik");
+        expToLogistics.setPrefWidth(75);
+
 
         ComboBox hoursStart = new ComboBox();
         ComboBox minutesStart = new ComboBox();
@@ -100,6 +105,10 @@ public class FXmain extends Application {
 
         exp.setText("Exportera");
         exp.setStyle("-fx-background-color: #008000;-fx-text-fill: antiquewhite");
+
+        TextField kickback= new TextField();
+        //kickback.setVisible(false);
+        kickback.setPromptText("kickbackprocent");
 
 
      /*   ObservableList<String> ol= FXCollections.observableArrayList(yldrStore.getManufacturer());
@@ -141,7 +150,7 @@ public class FXmain extends Application {
         HBox hBox4 = new HBox();
         hBox4.setVisible(false);
         hBox4.managedProperty().bind(hBox4.visibleProperty());
-        hBox4.getChildren().addAll(shops);
+        hBox4.getChildren().addAll(shops,kickback);
         hBox4.setAlignment(Pos.TOP_CENTER);
         VBox vBox2 = new VBox();
         vBox2.setVisible(false);
@@ -190,6 +199,7 @@ public class FXmain extends Application {
                                     alert.setHeaderText("Är du säker?");
                                     alert.setContentText("Tryck ok för att exportera. \nTryck cancel för att avbryta");
                                     Optional<ButtonType> result = alert.showAndWait();
+
                                     if (result.get() == ButtonType.OK) {
 
                                         export(datePickerStart, hoursStart, minutesStart, datePickerEnd, hoursEnd, minutesEnd, tillverkare.getValue().toString());
@@ -273,6 +283,8 @@ public class FXmain extends Application {
                 stageForProdukt.show();
             }
         });
+
+
         Button expQuart = new Button("Generera kvartalsrapport");
 
 
@@ -303,26 +315,20 @@ public class FXmain extends Application {
                         String formatedDateStart = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(startDatum);
                         String formatedDateEnd = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(slutDatum);
 
-
-                        yldr.getProductsSoldPerShop(shops.getValue().toString(), formatedDateStart, formatedDateEnd);
-
-                        System.out.println(yldr.getProductsSoldPerShop(shops.getValue().toString(), formatedDateStart, formatedDateEnd).getShopName());
-                        System.out.println(yldr.getProductsSoldPerShop(shops.getValue().toString(), formatedDateStart, formatedDateEnd).getSalesSumm());
-
-                        for (String si : yldr.getProductsSoldPerShop(shops.getValue().toString(), formatedDateStart, formatedDateEnd).getSKUarray()) {
-                            System.out.println(si);
+                        String s=kickback.getText();
+                        float svar=Float.parseFloat(s);
+                        svar=svar/100;
+                        try {
+                            yldr.createQuartillyExcel(formatedDateStart,formatedDateEnd,shops.getValue().toString(),svar);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
                         }
-                        for (String s : yldr.getProductsSoldPerShop(shops.getValue().toString(), formatedDateStart, formatedDateEnd).getCountryOfSales()) {
-                            System.out.println(s);
-                        }
-                        SalesInfo salesInfo1 = yldr.getProductsSoldPerShop(shops.getValue().toString(), formatedDateStart, formatedDateEnd);
-                        for (int i : salesInfo1.countAmountOfSKUsSold(salesInfo1.getSKUarray())) {
-                            System.out.println(i);
-                        }
+
                     } catch (NullPointerException e) {
 
                     }
-
 
                 });
 
@@ -514,6 +520,8 @@ public class FXmain extends Application {
 
             }
         });
+
+
 
         viewDB.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -761,6 +769,7 @@ public class FXmain extends Application {
                         tax.setMinWidth(100);
                         tax.setCellValueFactory(new PropertyValueFactory<>("tax"));
 
+
                         TableColumn<PurchaseOrder, Float> shippingSum = new TableColumn<>("shippingSum");
                         shippingSum.setMinWidth(100);
                         shippingSum.setCellValueFactory(new PropertyValueFactory<>("shippingSum"));
@@ -793,15 +802,104 @@ public class FXmain extends Application {
 
 
                         TableView<Order> orderTV = new TableView<>();
+                        orderTV.setEditable(true);
 
                         orderTV.sort();
 
 
                         ObservableList<Order> list = FXCollections.observableArrayList();
 
+                        TableColumn<Order, String> orderNumber = new TableColumn<>("orderNumber");
+                        orderNumber.setMinWidth(100);
+                        orderNumber.setCellValueFactory(new PropertyValueFactory<>("orderNumber"));
+
+                        TableColumn<Order, String> articleNumber = new TableColumn<>("articleNumber");
+                        articleNumber.setMinWidth(100);
+                        articleNumber.setCellValueFactory(new PropertyValueFactory<>("articleNumber"));
+
+                        TableColumn<Order, String> size = new TableColumn<>("size");
+                        size.setMinWidth(100);
+                        size.setCellValueFactory(new PropertyValueFactory<>("size"));
+
+                        TableColumn<Order, String> nickname = new TableColumn<>("nickname");
+                        nickname.setMinWidth(100);
+                        nickname.setCellValueFactory(new PropertyValueFactory<>("nickname"));
+
+                        TableColumn<Order, String> countryFlag = new TableColumn<>("countryFlag");
+                        countryFlag.setMinWidth(100);
+                        countryFlag.setCellValueFactory(new PropertyValueFactory<>("countryFlag"));
+
+                        TableColumn<Order, String> realName = new TableColumn<>("realName");
+                        realName.setMinWidth(100);
+                        realName.setCellValueFactory(new PropertyValueFactory<>("realName"));
+
+                        TableColumn<Order, String> rang = new TableColumn<>("rang");
+                        rang.setMinWidth(100);
+                        rang.setCellValueFactory(new PropertyValueFactory<>("rang"));
+
+                        TableColumn<Order, String> squadNumber = new TableColumn<>("squadNumber");
+                        squadNumber.setMinWidth(100);
+                        squadNumber.setCellValueFactory(new PropertyValueFactory<>("squadNumber"));
+
+                        TableColumn<Order, String> custom1 = new TableColumn<>("custom1");
+                        custom1.setMinWidth(100);
+                        custom1.setCellValueFactory(new PropertyValueFactory<>("custom1"));
+
+                        TableColumn<Order, String> custom2 = new TableColumn<>("custom2");
+                        custom2.setMinWidth(100);
+                        custom2.setCellValueFactory(new PropertyValueFactory<>("custom2"));
+
+                        TableColumn<Order, String> custom3 = new TableColumn<>("custom3");
+                        custom3.setMinWidth(100);
+                        custom3.setCellValueFactory(new PropertyValueFactory<>("custom3"));
+
+                        TableColumn<Order, Boolean> isSent = new TableColumn<>("isSent");
+                        isSent.setMinWidth(100);
+                        isSent.setCellValueFactory(new PropertyValueFactory<>("isSent"));
+                        isSent.setEditable(true);
+                        isSent.setCellFactory(TextFieldTableCell.forTableColumn(new BooleanStringConverter()));
+
+                        TableColumn<Order, Boolean> isLogisticsSent = new TableColumn<>("isLogisticsSent");
+                        isLogisticsSent.setMinWidth(100);
+                        isLogisticsSent.setCellValueFactory(new PropertyValueFactory<>("isLogisticsSent"));
+                        isLogisticsSent.setEditable(true);
+                        isLogisticsSent.setCellFactory(TextFieldTableCell.forTableColumn(new BooleanStringConverter()));
+
+
                         orderTV.getColumns().clear();
 
                         orderTV.getItems().clear();
+
+                        orderTV.getColumns().addAll(orderNumber,articleNumber,size,nickname,countryFlag,realName,rang,squadNumber, custom1,custom2,custom3,isSent, isLogisticsSent);
+
+                        try {
+                            for (Order c : yldrStore.getOC()) {
+                                list.add(c);
+                            }
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+
+                        orderTV.setItems(list);
+
+                        isLogisticsSent.setOnEditCommit(event -> {
+                            Order order = event.getRowValue();
+                            order.setLogisticsSent(event.getNewValue());
+                            yldrStore.updateISSenttoLogistics(event.getNewValue(),"isSentToLogistics", order.getOrderNumber(), order.getArticleNumber(), order.getSize(), order.getNickname(), order.getRealName(), order.getCountryFlag(), order.getRang(), order.getSquadNumber(), order.getCustom1(), order.getCustom2(), order.getCustom3());
+                        });
+
+                        isSent.setOnEditCommit(event -> {
+                            Order order = event.getRowValue();
+                            order.setIsSent(event.getNewValue());
+                            yldrStore.updateISSenttoLogistics(event.getNewValue(),"isSent", order.getOrderNumber(), order.getArticleNumber(), order.getSize(), order.getNickname(), order.getRealName(), order.getCountryFlag(), order.getRang(), order.getSquadNumber(), order.getCustom1(), order.getCustom2(), order.getCustom3());
+                        });
+
+
+                        Scene scene = new Scene(orderTV);
+
+                        Stage stage = new Stage();
+                        stage.setScene(scene);
+                        stage.show();
 
                     }
 
@@ -810,9 +908,71 @@ public class FXmain extends Application {
 
             }
         });
+        VBox vBox3= new VBox();
+        vBox3.setVisible(false);
+        Button expLogs= new Button("Exportera");
+      /*  expLogs.setVisible(false);
+        expLogs.managedProperty().bind(expLogs.visibleProperty());*/
+        vBox3.getChildren().addAll(expLogs);
+
+        HBox hBox5= new HBox();
+        hBox5.getChildren().addAll(datePickerStart, hoursStart, minutesStart);
+        hBox5.setVisible(false);
+        hBox5.managedProperty().bind(hBox5.visibleProperty());
+        hBox5.setAlignment(Pos.TOP_CENTER);
 
 
-        layout.getChildren().addAll(welcome, expOrders, hBox1, hBox2, vBox, addProduct, expQuart, hBox3, hBox4, vBox2, removeButton, ordernumberField, showSelectedOrder, viewDB, tabeller, quit);
+        HBox hBox6= new HBox();
+        hBox6.getChildren().addAll(datePickerEnd, hoursEnd, minutesEnd);
+        hBox6.setVisible(false);
+        hBox6.managedProperty().bind(hBox6.visibleProperty());
+        hBox6.setAlignment(Pos.TOP_CENTER);
+
+
+
+        vBox3.managedProperty().bind(vBox3.visibleProperty());
+        vBox3.setAlignment(Pos.TOP_CENTER);
+
+
+        expToLogistics.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+
+                getTimes(hoursStart, hoursEnd, minutesStart, minutesEnd);
+                if (hBox5.isVisible() && hBox6.isVisible() && vBox3.isVisible()) {
+                    hBox5.setVisible(false);
+                    hBox6.setVisible(false);
+                    vBox3.setVisible(false);
+                } else {
+                    hBox5.setVisible(true);
+                    hBox6.setVisible(true);
+                    vBox3.setVisible(true);
+                }
+
+                expLogs.setOnAction(new EventHandler<ActionEvent>() {
+                    @Override
+                    public void handle(ActionEvent actionEvent) {
+                        try {
+                            Timestamp startDatum = Timestamp.valueOf(datePickerStart.getValue().toString() + " " + hoursStart.getValue().toString() + ":" + minutesStart.getValue().toString() + ":00");
+                            Timestamp slutDatum = Timestamp.valueOf(datePickerEnd.getValue().toString() + " " + hoursEnd.getValue().toString() + ":" + minutesEnd.getValue().toString() + ":00");
+
+                                        exportLogistics(datePickerStart, hoursStart, minutesStart, datePickerEnd, hoursEnd, minutesEnd);
+
+                        }catch (NullPointerException e) {
+
+                        }
+
+
+
+                    }
+                });
+
+
+            }
+        });
+
+
+        layout.getChildren().addAll(welcome, expOrders, hBox1, hBox2, vBox, addProduct, expQuart, hBox3, hBox4, vBox2, removeButton, ordernumberField, showSelectedOrder, viewDB, tabeller, expToLogistics,hBox5,hBox6,vBox3, quit);
         Scene primaryScene = new Scene(layout, 600, 600);
 
         primaryStage.setTitle("YLDR Automatron");
@@ -850,6 +1010,18 @@ public class FXmain extends Application {
         String formatedDateEnd = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(slutDatum);
         try {
             yldr.createWB(formatedDateStart, formatedDateEnd, manufacturer);
+        } catch (IOException | SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void exportLogistics(DatePicker datePickerStart, ComboBox hoursStart, ComboBox minutesStart, DatePicker datePickerEnd, ComboBox hoursEnd, ComboBox minutesEnd) {
+        Timestamp startDatum = Timestamp.valueOf(datePickerStart.getValue().toString() + " " + hoursStart.getValue().toString() + ":" + minutesStart.getValue().toString() + ":00");
+        Timestamp slutDatum = Timestamp.valueOf(datePickerEnd.getValue().toString() + " " + hoursEnd.getValue().toString() + ":" + minutesEnd.getValue().toString() + ":00");
+        String formatedDateStart = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(startDatum);
+        String formatedDateEnd = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(slutDatum);
+        try {
+            yldr.createLogisticExcel(formatedDateStart, formatedDateEnd);
         } catch (IOException | SQLException e) {
             e.printStackTrace();
         }

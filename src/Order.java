@@ -14,8 +14,28 @@ public class Order {
    private String custom1;
     private String custom2;
     private String custom3;
+    private boolean isLogisticsSent;
 
     public Order() {
+    }
+
+    public Order(String orderNumber, String articleNumber, String size, String nickname, String countryFlag, String tillverkare, boolean isSent, String shop, String productName, String realName, String rang, String squadNumber, String custom1, String custom2, String custom3, boolean isLogisticsSent) {
+        this.orderNumber = orderNumber;
+        this.articleNumber = articleNumber;
+        this.size = size;
+        this.nickname = nickname;
+        this.countryFlag = countryFlag;
+        this.tillverkare = tillverkare;
+        this.isSent = isSent;
+        this.shop = shop;
+        this.productName = productName;
+        this.realName = realName;
+        this.rang = rang;
+        this.squadNumber = squadNumber;
+        this.custom1 = custom1;
+        this.custom2 = custom2;
+        this.custom3 = custom3;
+        this.isLogisticsSent = isLogisticsSent;
     }
 
     public Order(String orderNumber, String articleNumber, String size, String nickname, String countryFlag, String tillverkare, boolean isSent, String shop, String productName, String realName) {
@@ -98,6 +118,14 @@ public class Order {
         this.realName = realName;
     }
 
+    public boolean getIsLogisticsSent() {
+        return isLogisticsSent;
+    }
+
+    public void setLogisticsSent(boolean logisticsSent) {
+        isLogisticsSent = logisticsSent;
+    }
+
     public String getRealName() {
         return realName;
     }
@@ -118,7 +146,7 @@ public class Order {
         this.isSent = isSent;
     }
 
-    public boolean isSent() {
+    public boolean getIsSent() {
         return isSent;
     }
 

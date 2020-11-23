@@ -117,11 +117,18 @@ public class Main{
         System.out.println();
         yldrStore.getEverythingFromProduct();*/
 
-        LogistikInfo [] logistikInfo= new LogistikInfo[10];
+       /* LogistikInfo [] logistikInfo= new LogistikInfo[10];
 
         //yldrStore.getLogisticInfo("5f99db354d1c1a7c8d5f2f45", "2020-10-28 21:57:25", "2020-10-28 21:57:25");
 
-        yldr.createLogisticExcel("2020-10-28 21:57:25", "2020-10-29 19:29:03");
+       // yldr.createLogisticExcel("2020-10-28 21:57:25", "2020-10-28 21:57:25");
+
+        yldr.getProductsSoldPerShop("p9exdup6", "2020-11-13 09:18:22","2020-11-13 09:30:08");*/
+
+        yldr.createQuartillyExcel("2020-11-14 21:16:37","2020-11-19 15:28:51","alliancestore",0.10f);
+
+
+
 
 
 

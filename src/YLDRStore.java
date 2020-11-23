@@ -180,16 +180,31 @@ public class YLDRStore {
     public SalesInfo getSalesInfoFromDatabase(String shop, String startDate, String endDate) {
 
         // ArrayList<SalesInfo>salesInfos= new ArrayList<>();
-
         SalesInfo salesInfo = new SalesInfo();
+
         try (Connection conn = DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
-            PreparedStatement ps = conn.prepareStatement("select purchaseorder.totalamount from purchaseorder where purchaseorder.shop=? and purchaseorder.date between ? and ?");
+            PreparedStatement ps = conn.prepareStatement("select SUM(purchaseorder.shippingSum) as shippingSum from purchaseorder where purchaseorder.shop=? and purchaseorder.date between ? and ?");
+            ps.setString(1, shop);
+            ps.setString(2, startDate);
+            ps.setString(3, endDate);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                salesInfo.setShippingSum(rs.getFloat("shippingSum"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
+            PreparedStatement ps = conn.prepareStatement("select purchaseorder.totalamount, purchaseorder.currency from purchaseorder where purchaseorder.shop=? and purchaseorder.date between ? and ?");
             ps.setString(1, shop);
             ps.setString(2, startDate);
             ps.setString(3, endDate);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 salesInfo.setSalesSumm(rs.getFloat("totalamount"));
+                salesInfo.setValuta(rs.getString("currency"));
                 salesInfo.setShopName(shop);
             }
         } catch (SQLException e) {
@@ -198,13 +213,13 @@ public class YLDRStore {
 
 
         try (Connection conn = DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
-            PreparedStatement ps = conn.prepareStatement("SELECT ordercontent.articleNumber, product.productName from purchaseorder,ordercontent,product where purchaseorder.ordernumber=ordercontent.orderNumber and ordercontent.articleNumber=product.articleNumber and purchaseorder.shop=? and purchaseorder.date between ? and ?");
+            PreparedStatement ps = conn.prepareStatement("SELECT customer.country, ordercontent.articleNumber, product.productName, product.price, ordercontent.size from purchaseorder,ordercontent,product, customer where purchaseorder.ordernumber=ordercontent.orderNumber and purchaseorder.email=customer.email and ordercontent.articleNumber=product.articleNumber and purchaseorder.shop=? and purchaseorder.date between ? and ?");
             ps.setString(1, shop);
             ps.setString(2, startDate);
             ps.setString(3, endDate);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                salesInfo.setSKUInArray(rs.getString("productName"));
+                salesInfo.setProductInArray(new Product(rs.getString("articlenumber"),rs.getString("productName"), rs.getFloat("price"), rs.getString("country"), rs.getString("size")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -451,7 +466,7 @@ public class YLDRStore {
     public LogistikInfo [] getLogisticInfo(String startDate, String endDate) throws SQLException {
         logistikInfoArrayList.clear();
         try (Connection conn = DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
-            PreparedStatement ps= conn.prepareStatement("SELECT ordercontent.articleNumber, product.productName, ordercontent.orderNumber, CONCAT(customer.firstName, ' ' ,customer.lastName) as Name, customer.streetAdress, customer.zipCode, customer.city, customer.phoneNumber, customer.email, customer.country from customer, product, purchaseorder, ordercontent where customer.email = purchaseorder.email and purchaseorder.orderNumber = ordercontent.orderNumber and product.articleNumber = ordercontent.articleNumber and purchaseorder.date between ? and ?");
+            PreparedStatement ps= conn.prepareStatement("SELECT ordercontent.articleNumber, product.productName, ordercontent.orderNumber, CONCAT(customer.firstName, ' ' ,customer.lastName) as Name, customer.streetAdress, customer.zipCode, customer.city, customer.phoneNumber, customer.email, customer.country, ordercontent.nickname, ordercontent.size from customer, product, purchaseorder, ordercontent where customer.email = purchaseorder.email and purchaseorder.orderNumber = ordercontent.orderNumber and product.articleNumber = ordercontent.articleNumber and ordercontent.isSentToLogistics=0 and purchaseorder.date between ? and ?");
             ps.setString(1, startDate);
             ps.setString(2, endDate);
             ResultSet rs = ps.executeQuery();
@@ -467,13 +482,85 @@ public class YLDRStore {
                 logistikInfo.setCustomerPhoneNumber(rs.getString("phoneNumber"));
                 logistikInfo.setCustomerEmail(rs.getString("email"));
                 logistikInfo.setCountry(rs.getString("country"));
+                logistikInfo.setNickname(rs.getString("nickname"));
+                logistikInfo.setSize(rs.getString("size"));
+                setIsSentToLogistics(logistikInfo.getCustomerOrdernumber());
                 System.out.println(logistikInfo.getArticlenumber());
+
                 logistikInfoArrayList.add(logistikInfo);
             }
             LogistikInfo[] logistikInfoArray = new LogistikInfo[logistikInfoArrayList.size()];
             return logistikInfoArrayList.toArray(logistikInfoArray);
         }
 
+    }
+
+    public void setIsSentToLogistics(String ordernumber) throws SQLException {
+        compareOrdersArray.clear();
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
+            PreparedStatement ps = conn.prepareStatement("Update bDUc0El3cS.ordercontent set ordercontent.isSentToLogistics=1 where ordercontent.ordernumber=?;");
+            ps.setString(1, ordernumber);
+            ps.executeUpdate();
+
+            /*PreparedStatement ps2 = conn.prepareStatement("SELECT ordercontent.ordernumber, ordercontent.articlenumber, ordercontent.size, ordercontent.nickname, ordercontent.countryflag, ordercontent.sent, product.manufacturer FROM bDUc0El3cS.ordercontent, purchaseorder, product WHERE sent=1 and ordercontent.articlenumber=product.articlenumber and ordercontent.ordernumber=purchaseorder.ordernumber and purchaseorder.date between ? and ?;");
+            ps2.setString(1, startDate);
+            ps2.setString(2, endDate);
+            ResultSet rs2 = ps2.executeQuery();
+            while (rs2.next()) {
+                Order order = new Order(rs2.getString(1), rs2.getString(2), rs2.getString(3), rs2.getString(4), rs2.getString(5), rs2.getBoolean(6), rs2.getString(7));
+                compareOrdersArray.add(order);
+            }*/
+        }
+
+    }
+
+    ArrayList<Order> orderArrayList= new ArrayList<>();
+    public Order [] getOC() throws SQLException {
+        orderArrayList.clear();
+        try(Connection conn= DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
+            Statement st = conn.createStatement();
+            ResultSet rs= st.executeQuery("SELECT * from ordercontent");
+            while(rs.next()){
+                Order order=new Order();
+                order.setOrderNumber(rs.getString("orderNumber"));
+                order.setArticleNumber(rs.getString("articleNumber"));
+                order.setSize(rs.getString("size"));
+                order.setNickname(rs.getString("nickname"));
+                order.setCountryFlag(rs.getString("countryFlag"));
+                order.setRealName(rs.getString("realName"));
+                order.setRang(rs.getString("rang"));
+                order.setSquadNumber(rs.getString("squadNumber"));
+                order.setCustom1(rs.getString("Custom1"));
+                order.setCustom2(rs.getString("Custom2"));
+                order.setCustom3(rs.getString("Custom3"));
+                order.setIsSent(rs.getBoolean("IsSent"));
+                order.setLogisticsSent(rs.getBoolean("isSentToLogistics"));
+                orderArrayList.add(order);
+            }
+            Order [] orders= new Order[orderArrayList.size()];
+            return orderArrayList.toArray(orders);
+        }
+    }
+
+    public void updateISSenttoLogistics(boolean newValue, String column, String ordernumber, String articlenumber, String size, String nickname, String realName, String countryFlag, String rang, String squadNumber, String custom1, String custom2, String custom3) {
+        try(Connection conn= DriverManager.getConnection("jdbc:mysql://remotemysql.com:3306/bDUc0El3cS?useSSL=false", "bDUc0El3cS", "zvIgPALCPI")) {
+            PreparedStatement ps =conn.prepareStatement("Update ordercontent set " + column +"=? where ordercontent.orderNumber = ? and ordercontent.articleNumber = ? and (ordercontent.size = ? or ordercontent.size is null) and (ordercontent.nickname = ? or ordercontent.nickname is null) and (ordercontent.realName = ? or ordercontent.realName is null) and (ordercontent.countryFlag = ? or ordercontent.countryFlag is null) and (rang = ? or rang = '' or rang is null) and (squadNumber = ? or squadNumber = '' or squadNumber is null) and (custom1 = ? or custom1 = '' or custom1 is null) and (custom2 = ? or custom2 = '' or custom2 is null) and (custom3 = ? or custom3 = '' or custom3 is null)");
+            ps.setBoolean(1, newValue);
+            ps.setString(2, ordernumber);
+            ps.setString(3, articlenumber);
+            ps.setString(4, size);
+            ps.setString(5, nickname);
+            ps.setString(6, realName);
+            ps.setString(7, countryFlag);
+            ps.setString(8, rang);
+            ps.setString(9, squadNumber);
+            ps.setString(10,custom1);
+            ps.setString(11,custom2);
+            ps.setString(12,custom3);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 

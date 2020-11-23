@@ -13,6 +13,9 @@ public class LogistikInfo {
     private String customerEmail;
     private String country;
 
+    private String nickname;
+    private String size;
+
     private boolean notifyBySMS;
     private boolean notifyByTelefone;
     private boolean notifyByEmail;
@@ -36,6 +39,42 @@ public class LogistikInfo {
         this.notifyBySMS = notifyBySMS;
         this.notifyByTelefone = notifyByTelefone;
         this.notifyByEmail = notifyByEmail;
+    }
+
+    public LogistikInfo(String ordernumber, String articlenumber, String articleName, String customerOrdernumber, String wayOfDelivery, String customerName, String customerAdress, String customerPostCode, String customerCity, String customerPhoneNumber, String customerEmail, String country, String nickname, String size, boolean notifyBySMS, boolean notifyByTelefone, boolean notifyByEmail) {
+        this.ordernumber = ordernumber;
+        this.articlenumber = articlenumber;
+        this.articleName = articleName;
+        this.customerOrdernumber = customerOrdernumber;
+        this.wayOfDelivery = wayOfDelivery;
+        this.customerName = customerName;
+        this.customerAdress = customerAdress;
+        this.customerPostCode = customerPostCode;
+        this.customerCity = customerCity;
+        this.customerPhoneNumber = customerPhoneNumber;
+        this.customerEmail = customerEmail;
+        this.country = country;
+        this.nickname = nickname;
+        this.size = size;
+        this.notifyBySMS = notifyBySMS;
+        this.notifyByTelefone = notifyByTelefone;
+        this.notifyByEmail = notifyByEmail;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
     }
 
     public String getOrdernumber() {

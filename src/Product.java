@@ -3,8 +3,31 @@ public class Product {
     private String name;
     private String manufacturer;
     private float price;
+    private  String countryOfPurchase;
+    private String size;
 
     public Product() {
+    }
+
+    public Product(String SKU, String name, String manufacturer, float price, String countryOfPurchase) {
+        this.SKU = SKU;
+        this.name = name;
+        this.manufacturer = manufacturer;
+        this.price = price;
+        this.countryOfPurchase = countryOfPurchase;
+    }
+
+    public Product(String SKU, String name, float price, String countryOfPurchase) {
+        this.SKU = SKU;
+        this.name = name;
+        this.price = price;
+        this.countryOfPurchase = countryOfPurchase;
+    }
+
+    public Product(String SKU, String name, float price) {
+        this.SKU = SKU;
+        this.name = name;
+        this.price = price;
     }
 
     public Product(String SKU, String name, String manufacturer) {
@@ -16,6 +39,30 @@ public class Product {
     public Product(String name, float price) {
         this.name = name;
         this.price = price;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public Product(String SKU, String name, float price, String countryOfPurchase, String size) {
+        this.SKU = SKU;
+        this.name = name;
+        this.price = price;
+        this.countryOfPurchase = countryOfPurchase;
+        this.size = size;
+    }
+
+    public String getCountryOfPurchase() {
+        return countryOfPurchase;
+    }
+
+    public void setCountryOfPurchase(String countryOfPurchase) {
+        this.countryOfPurchase = countryOfPurchase;
     }
 
     public String getSKU() {

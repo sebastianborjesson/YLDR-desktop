@@ -1,6 +1,6 @@
-import org.apache.poi.ss.usermodel.CellStyle;
+import javafx.scene.paint.Color;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -8,9 +8,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.awt.*;
 import java.io.*;
+import java.sql.Array;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class YLDR {
 
@@ -19,6 +23,537 @@ public class YLDR {
 
     Workbook workbook;
     XSSFSheet spreadsheet;
+
+    public XSSFRow createQuartillyHeaderRows(XSSFSheet sheet, String startdatum, String slutdatum, String shop) {
+        XSSFRow row = sheet.createRow(0);
+
+        XSSFCell cell1 = row.createCell(0);
+        cell1.setCellValue(shop);
+        sheet.autoSizeColumn(cell1.getColumnIndex());
+
+        XSSFCell cell2 = row.createCell(1);
+        cell2.setCellValue(startdatum);
+        sheet.autoSizeColumn(cell2.getColumnIndex());
+
+        XSSFCell cell3 = row.createCell(2);
+        cell3.setCellValue(slutdatum);
+        sheet.autoSizeColumn(cell3.getColumnIndex());
+
+        XSSFCell cell4 = row.createCell(3);
+        cell4.setCellValue("Product Name");
+
+        XSSFCell cell5 = row.createCell(4);
+        cell5.setCellValue("Price before tax");
+
+        XSSFCell cell6 = row.createCell(5);
+        cell6.setCellValue("Number of products sold sold");
+
+        XSSFCell cell7 = row.createCell(6);
+        cell7.setCellValue("Total");
+
+        XSSFCell cell8 = row.createCell(7);
+        cell8.setCellValue("Currency");
+
+        XSSFCell cell9 = row.createCell(8);
+        cell9.setCellValue("Shipping cost");
+
+
+
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        style.setFont(font);
+        cell1.setCellStyle(style);
+        cell2.setCellStyle(style);
+        cell3.setCellStyle(style);
+        cell4.setCellStyle(style);
+        cell5.setCellStyle(style);
+        cell6.setCellStyle(style);
+        cell7.setCellStyle(style);
+        cell8.setCellStyle(style);
+        cell9.setCellStyle(style);
+
+
+        return row;
+    }
+
+    public void createQuartillyRows(String startdatum, String slutdatum, SalesInfo salesInfo, String shop, float kickback) {
+        XSSFSheet spreadsheet = (XSSFSheet) workbook.createSheet("Summary");
+        createQuartillyHeaderRows(spreadsheet, startdatum, slutdatum, shop);
+        createQuartilyPerCountrySheets(startdatum, slutdatum, shop, salesInfo);
+        createQuartilyPerSizeSheets(startdatum, slutdatum, shop, salesInfo);
+
+        CellStyle style = workbook.createCellStyle();
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+
+        ArrayList<String> arrayList = new ArrayList<>();
+        float summa = 0;
+
+        int totalAmountOfProducts = 0;
+
+        String SKU = null;
+        int rowCount = 1;
+        if (0 < salesInfo.getProductarray().length) {
+            SKU = salesInfo.getProductarray()[0].getSKU();
+        }
+        for (Product l : salesInfo.getProductarray()) {
+
+            if (!arrayList.contains(l.getName())) {
+
+                XSSFRow row2 = spreadsheet.createRow(rowCount++);
+                int columncount = 3;
+
+                if (!l.equals(SKU)) {
+                    XSSFRow separationRow = spreadsheet.createRow(rowCount++);
+                    XSSFCell separationCell= separationRow.createCell(6);
+                    separationCell.setCellStyle(style);
+                }
+
+
+                XSSFCell cell = row2.createCell(columncount++);
+                cell.setCellValue(l.getName());
+                spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+
+                XSSFCell cell2 = row2.createCell(columncount++);
+                cell2.setCellValue(String.format("%.2f",l.getPrice()));
+                spreadsheet.autoSizeColumn(cell2.getColumnIndex());
+
+
+                XSSFCell cell3 = row2.createCell(columncount++);
+                cell3.setCellValue(salesInfo.countPerProduct(l));
+
+                totalAmountOfProducts +=salesInfo.countPerProduct(l);
+
+                spreadsheet.autoSizeColumn(cell3.getColumnIndex());
+
+
+                XSSFCell cell4 = row2.createCell(columncount++);
+                cell4.setCellValue(String.format("%.2f",l.getPrice() * salesInfo.countPerProduct(l)));
+                summa += l.getPrice() * salesInfo.countPerProduct(l);
+                spreadsheet.autoSizeColumn(cell4.getColumnIndex());
+                cell4.setCellStyle(style);
+
+
+
+
+                arrayList.add(l.getName());
+                SKU = l.getSKU();
+            }
+        }
+        CellStyle gul = workbook.createCellStyle();
+        gul.setFillForegroundColor(IndexedColors.YELLOW1.getIndex());
+        gul.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        XSSFRow row2 = spreadsheet.createRow(rowCount + 3);
+        XSSFCell cell4 = row2.createCell(6);
+        cell4.setCellValue(String.format("%.2f",summa));
+        cell4.setCellStyle(style);
+        spreadsheet.autoSizeColumn(cell4.getColumnIndex());
+
+        XSSFCell cell4b = row2.createCell(5);
+        cell4b.setCellValue(totalAmountOfProducts);
+        spreadsheet.autoSizeColumn(cell4.getColumnIndex());
+
+
+        XSSFRow row3 = spreadsheet.createRow(rowCount + 5);
+        XSSFCell cell5= row3.createCell(6);
+        cell5.setCellValue(String.format("%.2f",summa*kickback));
+        cell5.setCellStyle(gul);
+        spreadsheet.autoSizeColumn(cell5.getColumnIndex());
+
+        XSSFCell cell6= row3.createCell(5);
+        cell6.setCellValue(String.format("Kickback     " +"%.2f%%",+kickback*100));
+        spreadsheet.autoSizeColumn(cell6.getColumnIndex());
+
+        XSSFCell cell6b=row3.createCell(7);
+        cell6b.setCellValue(salesInfo.getValuta());
+        spreadsheet.autoSizeColumn(cell6b.getColumnIndex());
+
+        XSSFCell cellShippingSum = row3.createCell(8);
+        cellShippingSum.setCellValue(String.format("%.2f",salesInfo.getShippingSum()));
+        spreadsheet.autoSizeColumn(cellShippingSum.getColumnIndex());
+
+        XSSFCell cellShippingSumCurrency = row3.createCell(9);
+        cellShippingSumCurrency.setCellValue(salesInfo.getValuta());
+        spreadsheet.autoSizeColumn(cellShippingSumCurrency.getColumnIndex());
+
+
+        //XSSFRow row3 = spreadsheet.createRow(rowCount+2);
+        XSSFCell cell7 = row2.createCell(7);
+        cell7.setCellValue(salesInfo.getValuta());
+        spreadsheet.autoSizeColumn(cell7.getColumnIndex());
+
+        CellStyle style2 = workbook.createCellStyle();
+        style2.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+        cell4.setCellStyle(style2);
+
+    }
+
+
+    public void createQuartilyPerCountrySheets(String startDatum, String slutDatum, String shop, SalesInfo salesInfo) {
+        spreadsheet = (XSSFSheet) workbook.createSheet("Products sold per country");
+
+        int rowCount = 0;
+
+
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        style.setFont(font);
+
+        XSSFRow row2 = spreadsheet.createRow(rowCount);
+        XSSFCell cell2 = row2.createCell(0);
+        cell2.setCellValue(shop);
+        cell2.setCellStyle(style);
+        spreadsheet.autoSizeColumn(cell2.getColumnIndex());
+
+
+        int columncount = 1;
+        ArrayList<String> pNameArrayList = new ArrayList<>();
+
+        for (Product p : salesInfo.getProductarray()) {
+
+            if (!pNameArrayList.contains(p.getName())) {
+                cell2 = row2.createCell(columncount++);
+                cell2.setCellValue(p.getName());
+                cell2.setCellStyle(style);
+                spreadsheet.autoSizeColumn(cell2.getColumnIndex());
+
+                pNameArrayList.add(p.getName());
+            }
+        }
+        int rowCount3 = 1;
+        int columnCount2 = 0;
+
+
+        ArrayList<String> compareArray = new ArrayList<>();
+
+        ArrayList<String> countryList = new ArrayList<>();
+
+        Product [] products= new Product[salesInfo.getProductarray().length];
+
+        ArrayList <Product> productArrayList= new ArrayList<>();
+
+      /*  for (int i = 0; i <salesInfo.getProductarray().length ; i++) {
+            for (int j = i+1; j <salesInfo.getProductarray().length ; j++) {
+                if (salesInfo.getProductarray()[i].getCountryOfPurchase().compareTo(salesInfo.getProductarray()[j].getCountryOfPurchase())<0){
+                    Product temp=salesInfo.getProductarray()[j];
+                    salesInfo.getProductarray()[j]=salesInfo.getProductarray()[i];
+
+                    if (!productArrayList.contains(salesInfo.getProductarray()[i].getCountryOfPurchase())) {
+                        productArrayList.add(salesInfo.getProductarray()[i]);
+                    }
+
+                    salesInfo.getProductarray()[i]=temp;
+                }
+            }
+        }
+
+        for (Product p:productArrayList) {
+            System.out.println("landet är " +p.getCountryOfPurchase());
+        }*/
+
+        for (Product p : salesInfo.getProductarray()) {
+
+
+            if (!countryList.contains(p.getCountryOfPurchase())) {
+
+                XSSFRow row3 = spreadsheet.createRow(rowCount3++);
+                XSSFCell cell = row3.createCell(columnCount2++);
+                cell.setCellValue(p.getCountryOfPurchase());
+                cell.setCellStyle(style);
+                spreadsheet.autoSizeColumn(cell.getColumnIndex());
+
+                countryList.add(p.getCountryOfPurchase());
+
+                for (Product p2 : salesInfo.getProductarray()) {
+
+                    System.out.println(p.getCountryOfPurchase());
+
+                    if (p.getCountryOfPurchase().equals(p2.getCountryOfPurchase())) {
+                        compareArray.add(p2.getName());
+                        System.out.println(p2.getName());
+
+                    }
+                }
+
+                int count = 0;
+                for (String s : pNameArrayList) {
+                    for (String s2 : compareArray
+                    ) {
+                        if (s.equals(s2)) {
+                            count++;
+
+                        }
+
+                    }
+                    XSSFCell cell4 = row3.createCell(columnCount2++);
+                    if (count!=0) {
+                        cell4.setCellValue(count);
+                    }
+                    System.out.println(count);
+                    count = 0;
+                }
+                compareArray.clear();
+                columnCount2 = 0;
+            }
+
+        }
+    }
+
+    public void createQuartilyPerSizeSheets(String startDatum, String slutDatum, String shop, SalesInfo salesInfo) {
+        spreadsheet = (XSSFSheet) workbook.createSheet("Products sold per size");
+
+        int rowCount = 0;
+
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        style.setFont(font);
+
+        XSSFRow row2 = spreadsheet.createRow(rowCount);
+        XSSFCell cell2 = row2.createCell(0);
+        cell2.setCellValue(shop);
+        cell2.setCellStyle(style);
+        spreadsheet.autoSizeColumn(cell2.getColumnIndex());
+
+        float iteration1 = 0;
+        float iteration2 = 0;
+        ArrayList<String> baraNamn = new ArrayList<>();
+        ArrayList<String> namnPlusStorlek = new ArrayList<>();
+
+        int columncount = 1;
+        ArrayList<String> pNameArrayList = new ArrayList<>();
+
+
+
+        for (Product p : salesInfo.getProductarray()) {
+
+            if (!pNameArrayList.contains(p.getName()) && p.getSize() != null) {
+                cell2 = row2.createCell(columncount++);
+                cell2.setCellStyle(style);
+                cell2.setCellValue(p.getName());
+                //spreadsheet.autoSizeColumn(cell2.getColumnIndex());
+
+                pNameArrayList.add(p.getName());
+
+                iteration1++;
+
+            }
+        }
+        int rowCount3 = 1;
+        int columnCount2 = 0;
+
+
+        ArrayList<String> compareArray = new ArrayList<>();
+
+        ArrayList<String> sizeList = new ArrayList<>();
+
+        int columnCount3 = 1;
+
+        String[] storleksArray = new String[salesInfo.getProductarray().length];
+
+        ArrayList<String> temp = new ArrayList<>();
+        String storlekar="";  //XS,S,M,L,XL,XXL,XXXL,XXXXL,128cl,140cl,152cl
+
+        for (Product p :salesInfo.getProductarray()) {
+            storlekar+=p.getSize()+",";
+        }
+        System.out.println(storlekar);
+
+
+
+
+        temp.toArray(storleksArray);
+
+        sizeList.clear();
+
+
+
+
+       for (String p :  storlekar.split(",")) {
+
+
+            if (!sizeList.contains(p)) {
+                if (p != null ) {
+                    if (!p.equals("null")) {
+                        int count = rowCount3;
+                        XSSFRow row3 = spreadsheet.createRow(rowCount3++);
+
+                        XSSFCell cell = row3.createCell(columnCount2);
+                        cell.setCellStyle(style);
+                        cell.setCellValue(p);
+
+                        sizeList.add(p);
+
+                        if (count < rowCount3) {
+                            columnCount3 = 1;
+                            baraNamn.clear();
+                        }
+
+                    }
+                }
+            }
+        }
+        int antalProdukterPerSKU = 0;
+        float antalProdukterAvSammaStorlek = 0;
+
+        for (int i = 0; i < sizeList.size(); i++) {
+            for (int j = 0; j < salesInfo.getProductarray().length; j++) {
+
+                if (salesInfo.getProductarray()[j].getSize() != null) {
+                    if (salesInfo.getProductarray()[j].getSize().equals(sizeList.get(i))) {
+                        if (!namnPlusStorlek.contains(salesInfo.getProductarray()[j].getName() + salesInfo.getProductarray()[j].getSize())) {
+                            namnPlusStorlek.add(salesInfo.getProductarray()[j].getName() + salesInfo.getProductarray()[j].getSize());
+                            antalProdukterPerSKU = 0;
+                            antalProdukterAvSammaStorlek = 0;
+
+                            for (Product p : salesInfo.getProductarray()) {
+                                if (salesInfo.getProductarray()[j].getName().equals(p.getName())) {
+                                    antalProdukterPerSKU++;
+                                    if (salesInfo.getProductarray()[j].getSize().equals(p.getSize())) {
+                                        antalProdukterAvSammaStorlek++;
+                                    }
+                                }
+                            }
+                            float procent = antalProdukterAvSammaStorlek / antalProdukterPerSKU;
+
+                            if (procent > 0) {
+                                int pos = 0;
+                                for (int k = 0; k < pNameArrayList.size(); k++) {
+                                    if (salesInfo.getProductarray()[j].getName().equals(pNameArrayList.get(k))) {
+                                        pos = k;
+                                    }
+                                }
+
+                                XSSFCell cell4 = spreadsheet.getRow(i + 1).createCell(pos + 1);
+                                float summa=procent*100;
+                                cell4.setCellValue(String.format("%.0f%%",summa));
+                            }
+
+
+                        }
+
+                    }
+                }
+
+            }
+
+        }
+
+
+
+
+
+
+
+       /* for (Product p : salesInfo.getProductarray()) {
+
+
+            if (!sizeList.contains(p.getSize())) {
+                if (p.getSize() != null) {
+                    int count = rowCount3;
+                    XSSFRow row3 = spreadsheet.createRow(rowCount3++);
+                    XSSFCell cell = row3.createCell(columnCount2);
+                    cell.setCellValue(p.getSize());
+
+                    sizeList.add(p.getSize());
+
+                    if (count < rowCount3) {
+                        columnCount3 = 1;
+                        baraNamn.clear();
+                    }
+
+
+                }
+            }
+            int antalProdukterPerSKU = 0;
+            float antalProdukterAvSammaStorlek = 0;
+            int sizeCount = 0;
+
+            for (Product p2 : salesInfo.getProductarray()) {
+
+                if (p.getName().equals(p2.getName()) && p.getSize() != null && p2.getSize() != null) {
+                    antalProdukterPerSKU++;
+                    if (p.getSize() != null && p2.getSize() != null && p.getSize().equals(p2.getSize())) {
+                        antalProdukterAvSammaStorlek++;
+                    }
+                }
+            }
+
+
+            float procent = antalProdukterAvSammaStorlek / antalProdukterPerSKU;
+
+            if (procent > 0) {
+
+
+                int i;
+                int pos=0;
+
+                System.out.println(procent);
+                for ( i = 0; i <pNameArrayList.size() ; i++) {
+                    if (!baraNamn.contains(p.getName())){
+                        if (pNameArrayList.get(i).equals(p.getName())) {
+                            pos = i;
+                        }
+                    }
+                }
+                if (!baraNamn.contains(p.getName())) {
+                    if (!namnPlusStorlek.contains(p.getName() + p.getSize())) {
+                        XSSFCell cell4 = spreadsheet.getRow(rowCount3 - 1).createCell(pos + 1);
+                        cell4.setCellValue(procent);
+                        baraNamn.add(p.getName());
+                        namnPlusStorlek.add(p.getName()+p.getSize());
+                    }
+                }
+
+                iteration2++;
+            }
+        }*/
+    }
+
+
+    public void createQuartillyExcel(String startDatum, String slutDatum, String shop, float kickback) throws SQLException, FileNotFoundException {
+
+
+        String path = System.getProperty("user.home") + "\\" + "Kvartalsrapport " + shop + " " + LocalDate.now(
+                ZoneId.of("Europe/Stockholm")) + ".xlsx";
+        File file = new File(path);
+
+
+        if (!file.exists()) {
+            workbook = new XSSFWorkbook();
+            createQuartillyRows(startDatum, slutDatum, yldrStore.getSalesInfoFromDatabase(shop, startDatum, slutDatum), shop,kickback);
+
+            //        createRows(startDatum, slutDatum, ordrar, manufacturer);
+            try (OutputStream fileOut = new FileOutputStream(new File(String.valueOf(file)))) {
+                workbook.write(fileOut);
+                Desktop.getDesktop().open(new File(String.valueOf(file)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else if (file.exists()) {
+
+            workbook = new XSSFWorkbook();
+            createQuartillyRows(startDatum, slutDatum, yldrStore.getSalesInfoFromDatabase(shop, startDatum, slutDatum), shop, kickback);
+            for (int i = 1; file.exists(); i++) {
+                file = new File(String.format(System.getProperty("user.home") + "\\" + "Kvartalsrapport " + shop + " " + LocalDate.now(ZoneId.of("Europe/Stockholm")) + " (%d)" + ".xlsx", i));
+            }
+            //    createRows(startDatum, slutDatum, ordrar, manufacturer);
+
+            try (OutputStream fileOut = new FileOutputStream(new File(String.valueOf(file)))) {
+                workbook.write(fileOut);
+                Desktop.getDesktop().open(new File(String.valueOf(file)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+    }
 
 
     public XSSFRow createLogisticsHeaderRow(XSSFSheet sheet) {
@@ -151,14 +686,26 @@ public class YLDR {
             spreadsheet.autoSizeColumn(cell.getColumnIndex());
 
 
-            String s=l.getCustomerOrdernumber().substring(17);
+            String s = l.getCustomerOrdernumber().substring(17);
             XSSFCell cell2 = row2.createCell(columncount++);
             cell2.setCellValue(s);
             spreadsheet.autoSizeColumn(cell2.getColumnIndex());
 
+            String strolek="_"+l.getNickname();
+            if (l.getNickname() == null) {
+                strolek=" ";
+            }else if(l.getNickname().isEmpty()){
+                strolek=" ";
+            }
+            if (l.getSize() == null) {
+                l.setSize(" ");
+            }
+
             XSSFCell cell3 = row2.createCell(columncount++);
-            cell3.setCellValue(l.getArticlenumber());
+            cell3.setCellValue(l.getArticlenumber() + "_" + l.getSize() + strolek);
             spreadsheet.autoSizeColumn(cell3.getColumnIndex());
+
+
 
             XSSFCell cell4 = row2.createCell(columncount++);
             cell4.setCellValue(l.getArticleName());
@@ -233,15 +780,15 @@ public class YLDR {
             spreadsheet.autoSizeColumn(cell21.getColumnIndex());
 
             XSSFCell cell22 = row2.createCell(columncount++);
-            cell22.setCellValue("(Y)");
+            cell22.setCellValue("1");
             spreadsheet.autoSizeColumn(cell22.getColumnIndex());
 
             XSSFCell cell23 = row2.createCell(columncount++);
-            cell23.setCellValue("(Y)");
+            cell23.setCellValue("1");
             spreadsheet.autoSizeColumn(cell23.getColumnIndex());
 
             XSSFCell cell24 = row2.createCell(columncount++);
-            cell24.setCellValue("(Y)");
+            cell24.setCellValue("");
             spreadsheet.autoSizeColumn(cell24.getColumnIndex());
 
             ordernumber = l.getCustomerOrdernumber();
@@ -388,6 +935,7 @@ public class YLDR {
             return true;
         } else return false;
     }
+
 
     public XSSFRow createHeaderRow(XSSFSheet sheet) {
         XSSFRow row = sheet.createRow(0);
@@ -843,6 +1391,10 @@ public class YLDR {
         }*/
         SalesInfo salesInfo = yldrStore.getSalesInfoFromDatabase(shop, startDate, endDate);
 
+        for (int s : salesInfo.countAmountOfSKUsSold(salesInfo.getProductarray())) {
+            System.out.println(s);
+        }
+
         return salesInfo;
 
     }
@@ -856,9 +1408,9 @@ public class YLDR {
     }
 
     public void removeFromDB(String orderNumber, String articleNumber, String size, String nickname, String countryFlag, String realName, String rang, String squadNumber, String custom1, String custom2, String custom3) throws SQLException {
-        calculateNewTotalAmount(orderNumber, articleNumber, size, nickname, countryFlag, realName, rang ,squadNumber, custom1, custom2, custom3);
+        calculateNewTotalAmount(orderNumber, articleNumber, size, nickname, countryFlag, realName, rang, squadNumber, custom1, custom2, custom3);
 
-        yldrStore.deleteRowFromOC(orderNumber, articleNumber, size, nickname, countryFlag, realName, rang ,squadNumber, custom1, custom2, custom3);
+        yldrStore.deleteRowFromOC(orderNumber, articleNumber, size, nickname, countryFlag, realName, rang, squadNumber, custom1, custom2, custom3);
 
         if (yldrStore.getRowFromOrdercontent(orderNumber).length == 0) {
             yldrStore.deleteFromPO(orderNumber);
@@ -871,7 +1423,7 @@ public class YLDR {
         float nyaTotalSumman;
         float nyaSkatteSumman;
 
-        OrderCalculator oc = yldrStore.getPricingInfo(orderNumber, articleNumber, size, nickname, realName, countryFlag,rang, squadNumber, custom1, custom2, custom3);
+        OrderCalculator oc = yldrStore.getPricingInfo(orderNumber, articleNumber, size, nickname, realName, countryFlag, rang, squadNumber, custom1, custom2, custom3);
         float temp;
         float temp2;
 
